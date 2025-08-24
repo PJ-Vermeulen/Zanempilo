@@ -1,0 +1,60 @@
+-- Donor
+CREATE TABLE Donor (
+	Donor_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	First_Name TEXT NOT NULL,
+	Last_Name TEXT NOT NULL,
+	Email TEXT UNIQUE
+);
+
+-- Donation_Type
+CREATE TABLE Donation_Type (
+	DonationType_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Description TEXT NOT NULL
+);
+
+-- Donation
+CREATE TABLE Donation (
+	Donation_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Donor_ID INTEGER NOT NULL,
+	DonationType_ID INTEGER NOT NULL,
+	Donation_Date TEXT NOT NULL,
+	Description TEXT,
+	Quantity INTEGER NOT NULL,
+	FOREIGN KEY (Donor_ID) REFERENCES Donor(Donor_ID),
+	FOREIGN KEY (DonationType_ID) REFERENCES Donation_Type(DonationType_ID)
+);
+
+-- Stock
+CREATE TABLE Stock (
+	Stock_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Donation_ID INTEGER NOT NULL,
+	Description TEXT,
+	Quantity_In_Stock INTEGER NOT NULL,
+	FOREIGN KEY (Donation_ID) REFERENCES Donation(Donation_ID)
+);
+
+-- Client
+CREATE TABLE Client (
+	Client_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	First_Name TEXT NOT NULL,
+	Last_Name TEXT NOT NULL,
+	Email TEXT UNIQUE
+);
+
+-- Client_Order
+CREATE TABLE Client_Order (
+	Order_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Client_ID INTEGER NOT NULL,
+	Order_Date TEXT NOT NULL,
+	FOREIGN KEY (Client_ID) REFERENCES Client(Client_ID)
+);
+
+-- Order_Detail
+CREATE TABLE Order_Detail (
+	OrderDetail_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Order_ID INTEGER NOT NULL,
+	Stock_ID INTEGER NOT NULL,
+	Quantity INTEGER NOT NULL,
+	FOREIGN KEY (Order_ID) REFERENCES Client_Order(Order_ID),
+	FOREIGN KEY (Stock_ID) REFERENCES Stock(Stock_ID)
+);

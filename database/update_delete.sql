@@ -1,4 +1,4 @@
-USE Zanempilo;
+USE ZanempiloDB;
 GO
 
 -- Example UPDATE: Restock 50 units on Stock_ID = 3

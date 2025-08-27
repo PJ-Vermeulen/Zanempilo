@@ -1,4 +1,4 @@
-USE Zanempilo;
+USE ZanempiloDB;
 GO
 
 -- Donation types

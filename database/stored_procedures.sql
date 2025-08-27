@@ -1,4 +1,4 @@
-USE Zanempilo;
+USE ZanempiloDB;
 GO
 
 -- 1. Summary of donations per donor

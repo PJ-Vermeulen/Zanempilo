@@ -1,4 +1,4 @@
-USE Zanempilo;
+USE ZanempiloDB;
 GO
 
 -- 1. Total donated quantity by donor

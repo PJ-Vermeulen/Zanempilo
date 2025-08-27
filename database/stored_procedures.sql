@@ -1,39 +1,196 @@
 USE ZanempiloDB;
 GO
 
--- 1. Summary of donations per donor
-IF OBJECT_ID('sp_GetDonationsByDonor','P') IS NOT NULL
-  DROP PROCEDURE sp_GetDonationsByDonor;
-GO
-CREATE PROCEDURE sp_GetDonationsByDonor
-  @DonorID INT = NULL
-AS
-BEGIN
-  SELECT 
-    d.Donor_ID,
-    d.First_Name + ' ' + d.Last_Name AS DonorName,
-    dt.Description       AS DonationType,
-    SUM(do.Quantity)     AS TotalQuantity
-  FROM Donation do
-  JOIN Donor d           ON do.Donor_ID = d.Donor_ID
-  JOIN Donation_Type dt  ON do.DonationType_ID = dt.DonationType_ID
-  WHERE @DonorID IS NULL OR d.Donor_ID = @DonorID
-  GROUP BY d.Donor_ID, d.First_Name, d.Last_Name, dt.Description;
-END;
+/*
+  ===========================================
+  sp_ManageDonationType
+  INSERT, UPDATE, DELETE on Donation_Type
+  ===========================================
+*/
+IF OBJECT_ID('sp_ManageDonationType','P') IS NOT NULL
+  DROP PROCEDURE sp_ManageDonationType;
 GO
 
--- 2. Place a new order (inserts header & details)
-IF OBJECT_ID('sp_PlaceOrder','P') IS NOT NULL
-  DROP PROCEDURE sp_PlaceOrder;
-GO
-CREATE PROCEDURE sp_PlaceOrder
-  @ClientID INT,
-  @OrderDate DATETIME,
-  @StockID INT,
-  @Qty INT
+CREATE PROCEDURE sp_ManageDonationType
+  @Action             NVARCHAR(10),          -- 'INSERT', 'UPDATE', 'DELETE'
+  @DonationType_ID    INT            = NULL, -- Required for UPDATE / DELETE
+  @Description        NVARCHAR(255) = NULL   -- Required for INSERT / UPDATE
 AS
 BEGIN
   SET NOCOUNT ON;
+
+  IF @Action = 'INSERT'
+  BEGIN
+    INSERT INTO Donation_Type (Description)
+      VALUES (@Description);
+    SELECT SCOPE_IDENTITY() AS NewDonationTypeID;
+  END
+  ELSE IF @Action = 'UPDATE'
+  BEGIN
+    UPDATE Donation_Type
+      SET Description = @Description
+    WHERE DonationType_ID = @DonationType_ID;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+  END
+  ELSE IF @Action = 'DELETE'
+  BEGIN
+    DELETE FROM Donation_Type
+    WHERE DonationType_ID = @DonationType_ID;
+
+    SELECT @@ROWCOUNT AS RowsDeleted;
+  END
+  ELSE
+    RAISERROR('Invalid @Action. Use INSERT, UPDATE or DELETE.', 16, 1);
+END;
+GO
+
+
+/*
+  ===========================================
+  sp_ManageDonor
+  INSERT, UPDATE, DELETE on Donor
+  ===========================================
+*/
+IF OBJECT_ID('sp_ManageDonor','P') IS NOT NULL
+  DROP PROCEDURE sp_ManageDonor;
+GO
+
+CREATE PROCEDURE sp_ManageDonor
+  @Action      NVARCHAR(10),          -- 'INSERT', 'UPDATE', 'DELETE'
+  @Donor_ID    INT            = NULL, -- Required for UPDATE / DELETE
+  @First_Name  NVARCHAR(100) = NULL,  -- Required for INSERT / UPDATE
+  @Last_Name   NVARCHAR(100) = NULL,  -- Required for INSERT / UPDATE
+  @Email       NVARCHAR(255) = NULL   -- Required for INSERT / UPDATE
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @Action = 'INSERT'
+  BEGIN
+    INSERT INTO Donor (First_Name, Last_Name, Email)
+      VALUES (@First_Name, @Last_Name, @Email);
+    SELECT SCOPE_IDENTITY() AS NewDonorID;
+  END
+  ELSE IF @Action = 'UPDATE'
+  BEGIN
+    UPDATE Donor
+      SET First_Name = @First_Name,
+          Last_Name  = @Last_Name,
+          Email      = @Email
+    WHERE Donor_ID = @Donor_ID;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+  END
+  ELSE IF @Action = 'DELETE'
+  BEGIN
+    DELETE FROM Donor
+    WHERE Donor_ID = @Donor_ID;
+
+    SELECT @@ROWCOUNT AS RowsDeleted;
+  END
+  ELSE
+    RAISERROR('Invalid @Action. Use INSERT, UPDATE or DELETE.', 16, 1);
+END;
+GO
+
+
+/*
+  ===========================================
+  sp_ManageStock
+  INSERT, UPDATE, DELETE on Stock
+  ===========================================
+*/
+IF OBJECT_ID('sp_ManageStock','P') IS NOT NULL
+  DROP PROCEDURE sp_ManageStock;
+GO
+
+CREATE PROCEDURE sp_ManageStock
+  @Action            NVARCHAR(10),          -- 'INSERT', 'UPDATE', 'DELETE'
+  @Stock_ID          INT            = NULL, -- Required for UPDATE / DELETE
+  @Donation_ID       INT            = NULL, -- Required for INSERT / UPDATE
+  @Description       NVARCHAR(500) = NULL,  -- Optional for INSERT / UPDATE
+  @Quantity_In_Stock INT            = NULL  -- Required for INSERT / UPDATE
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @Action = 'INSERT'
+  BEGIN
+    INSERT INTO Stock (Donation_ID, Description, Quantity_In_Stock)
+      VALUES (@Donation_ID, @Description, @Quantity_In_Stock);
+    SELECT SCOPE_IDENTITY() AS NewStockID;
+  END
+  ELSE IF @Action = 'UPDATE'
+  BEGIN
+    UPDATE Stock
+      SET Donation_ID       = @Donation_ID,
+          Description       = @Description,
+          Quantity_In_Stock = @Quantity_In_Stock
+    WHERE Stock_ID = @Stock_ID;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+  END
+  ELSE IF @Action = 'DELETE'
+  BEGIN
+    DELETE FROM Stock
+    WHERE Stock_ID = @Stock_ID;
+
+    SELECT @@ROWCOUNT AS RowsDeleted;
+  END
+  ELSE
+    RAISERROR('Invalid @Action. Use INSERT, UPDATE or DELETE.', 16, 1);
+END;
+GO
+
+
+/*
+  ===========================================
+  sp_ManageClient
+  INSERT, UPDATE, DELETE on Client
+  ===========================================
+*/
+IF OBJECT_ID('sp_ManageClient','P') IS NOT NULL
+  DROP PROCEDURE sp_ManageClient;
+GO
+
+CREATE PROCEDURE sp_ManageClient
+  @Action     NVARCHAR(10),           -- 'INSERT', 'UPDATE', 'DELETE'
+  @Client_ID  INT            = NULL,  -- Required for UPDATE / DELETE
+  @First_Name NVARCHAR(100) = NULL,   -- Required for INSERT / UPDATE
+  @Last_Name  NVARCHAR(100) = NULL,   -- Required for INSERT / UPDATE
+  @Email      NVARCHAR(255) = NULL    -- Required for INSERT / UPDATE
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @Action = 'INSERT'
+  BEGIN
+    INSERT INTO Client (First_Name, Last_Name, Email)
+      VALUES (@First_Name, @Last_Name, @Email);
+    SELECT SCOPE_IDENTITY() AS NewClientID;
+  END
+  ELSE IF @Action = 'UPDATE'
+  BEGIN
+    UPDATE Client
+      SET First_Name = @First_Name,
+          Last_Name  = @Last_Name,
+          Email      = @Email
+    WHERE Client_ID = @Client_ID;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+  END
+  ELSE IF @Action = 'DELETE'
+  BEGIN
+    DELETE FROM Client
+    WHERE Client_ID = @Client_ID;
+
+    SELECT @@ROWCOUNT AS RowsDeleted;
+  END
+  ELSE
+    RAISERROR('Invalid @Action. Use INSERT, UPDATE or DELETE.', 16, 1);
+END;
+GO
 
   DECLARE @OrderID INT;
   INSERT INTO Client_Order (Client_ID, Order_Date)
